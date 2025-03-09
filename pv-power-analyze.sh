@@ -1,52 +1,54 @@
-#! /usr/bin/sh
+#!/usr/bin/sh
 #
-# Fetch data from pv-inverter and weater data from wttr.in.
-# Combine data in a `.csv` file to see weather effects on
+# Fetch data from a deye pv-inverter and weather data from wttr.in.
+# Combine data inside a `.csv` file to see weather effects on
 # solar power production.
 #
-# This script writes logs (csv) to ~/.cache/pv/$date.csv.
-# Recorded data is then ploted to ~/.cache/pv/$date.png.
+# This script writes data to ~/.cache/pv/$date.csv.
+# Data is then ploted to ~/.cache/pv/$date.png.
 
-# The log & plot path
-export PV_LOG_PATH="$HOME/.cache/pv"
+# Source config containing credentials, location, ip & path
+source ./pv-power-analyze-config
 
 # Get current power output [W] from pv-inverter via the html landing page.
 get_pv_data() {
-  local pv_w=$(curl -u $PV_USER:$PV_PASSWORD "http://$PV_IP/status.html" \
+  pv_w=$(curl -u $INVERTER_USER:$INVERTER_PASSWORD "http://$INVERTER_IP/status.html" \
     | grep -oP 'var webdata_now_p = "([^"]*)"' \
     | grep -oE '[0-9]+')
 
   echo "$pv_w"
 }
 
-# Get weather from wttr.in. Response is a json encoded. Just
+# Get weather from wttr.in. Response is json encoded. Just
 # get the current weather condition.
 get_wttr_data() {
-  local wttr=$(curl "wttr.in/$PV_LOCATION?format=j1" \
+  wttr=$(curl "wttr.in/$INVERTER_LOCATION?format=j1" \
     | jq ".current_condition.[]")
-  local temp_c=$(jq --raw-output ".temp_C" <<< $wttr)
-  local humidity=$(jq --raw-output ".humidity" <<< $wttr)
-  local uv_index=$(jq --raw-output ".uvIndex" <<< $wttr)
-  local cloud_cover=$(jq --raw-output ".cloudcover" <<< $wttr)
+  temp_c=$(jq --raw-output ".temp_C" < $wttr)
+  humidity=$(jq --raw-output ".humidity" < $wttr)
+  uv_index=$(jq --raw-output ".uvIndex" < $wttr)
+  cloud_cover=$(jq --raw-output ".cloudcover" < $wttr)
 
   echo "$temp_c, $humidity, $uv_index, $cloud_cover"
 }
 
 main() {
-  local date=$(date +%d-%m-%y)
-  local time=$(date +%H:%M)
-  local pv_data=$(get_pv_data)
-  local wttr_data=$(get_wttr_data)
+  test ! -d $PV_LOG_PATH && mkdir -p $PV_LOG_PATH
+  test ! -f .config && echo "Configuration file not avaliable, exiting." && exit 1
+  date=$(date +%d-%m-%y)
+  time=$(date +%H:%M)
+  pv_data=$(get_pv_data)
+  wttr_data=$(get_wttr_data)
 
   echo "$time, $pv_data, $wttr_data" >> $PV_LOG_PATH/$date.csv
   
   # Use GNUplot to plot data and visualize it with a diagram.
-  gnuplot <<< "
+  gnuplot < "
     set output \"$PV_LOG_PATH/$date.png\"
 
     set terminal png size 1920,1080
     set mytics 10
-    set mxtics 5
+    set mxtics 6
     set timefmt \"%H:%M\"
     set xdata time
     set xrange [\"00:00\": \"23:50\"]
