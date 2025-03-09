@@ -20,9 +20,9 @@ while true; do
 done
 ```
 
-*NOTE*: Set your required options inside `pv-power-analyze-config`. 
+**NOTE**: Set your required options inside `pv-power-analyze-config`. 
 
-INVERVER_LOCATION variable is optional, but helps with more accurate results.
+`INVERVER_LOCATION` variable is optional, but helps with more accurate results.
 Longitude and latitude should be specified with **not** more
 than two decimal places (e.g. `32.12,8.32`):
 ```sh
