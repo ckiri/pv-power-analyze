@@ -1,0 +1,5 @@
+INVERTER_USER="username"
+INVERTER_PASSWORD="password"
+INVERTER_IP="ip"
+INVERTER_LOCATION=""
+PV_LOG_PATH="$HOME/.cache/pv"
